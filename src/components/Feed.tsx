@@ -1,13 +1,64 @@
-import React from "react";
-import { auth } from "../firebase";
+import React, { useEffect, useState } from "react";
+import { db } from "../firebase";
 import TweetInput from "./TweetInput";
 import styles from "./Feed.module.css";
+import { FC } from "react";
+import Post from "./Post";
 
-const Feed = () => {
+const Feed: FC = () => {
+  const [posts, setPosts] = useState([
+    {
+      id: "",
+      avatar: "",
+      image: "",
+      text: "",
+      timestamp: null,
+      username: "",
+    },
+  ]);
+
+  useEffect(() => {
+    const unSub = db
+      .collection("posts") // Databaseのpostsからコレクションを取得
+      .orderBy("timestamp", "desc") // timestampを降順
+      .onSnapshot(
+        (
+          snapshot // firebaseに何らかのデータがあるたびに以下の処理が走る
+        ) =>
+          setPosts(
+            snapshot.docs.map((doc) => ({
+              id: doc.id,
+              avatar: doc.data().avatar,
+              image: doc.data().image,
+              text: doc.data().text,
+              timestamp: doc.data().timestamp,
+              username: doc.data().username,
+            }))
+          )
+      );
+    return () => {
+      unSub();
+    };
+  }, []);
+
   return (
     <div className={styles.feed}>
       <TweetInput />
-      <button onClick={() => auth.signOut()}>Logout</button>
+      {posts[0]?.id && (
+        <>
+          {posts.map((post) => (
+            <Post
+              key={post.id}
+              postId={post.id}
+              avatar={post.avatar}
+              image={post.image}
+              text={post.text}
+              timestamp={post.timestamp}
+              username={post.username}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 };
